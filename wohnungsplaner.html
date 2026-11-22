@@ -94,6 +94,12 @@ document.currentScript.parentNode.appendChild(link);
   .cat-badge{font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap;flex-shrink:0;}
   .fab{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom,0px));right:20px;width:52px;height:52px;border-radius:50%;background:var(--blue);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(0,0,0,0.25);transition:transform 0.15s;z-index:20;}
   .fab:active{transform:scale(0.94);}
+  .menu-btn{display:block;width:100%;padding:14px;margin-bottom:8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;text-align:left;}
+  .restore-btn{background:none;border:0.5px solid var(--blue);color:var(--blue);border-radius:20px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+  .restore-btn:active{background:var(--bg2);}
+  #toast{position:fixed;left:16px;right:16px;bottom:calc(134px + env(safe-area-inset-bottom,0px));background:#2c2c2e;color:#fff;border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:200;opacity:0;pointer-events:none;transform:translateY(8px);transition:all 0.2s;}
+  #toast.show{opacity:1;pointer-events:auto;transform:none;}
+  #toast button{background:none;border:none;color:#6ab4f0;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;}
   .shoplist-item{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);margin:0 16px 8px;}
   .shoplist-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;cursor:pointer;background:transparent;}
   .shoplist-check.done{background:var(--green);border-color:var(--green);}
@@ -279,6 +285,18 @@ document.currentScript.parentNode.appendChild(link);
   </div>
 </div>
 
+<!-- TRASH VIEW -->
+<div id="view-trash" class="view">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()"><svg width="20" height="20"><use href="#ic-back"/></svg> Zurück</button>
+    <h1>Papierkorb</h1>
+    <button class="icon-btn" onclick="emptyTrash()" style="color:var(--red)">Leeren</button>
+  </div>
+  <div class="scroll-area" id="trash-container" style="padding-top:12px"></div>
+</div>
+
+<div id="toast"><span id="toast-msg"></span><button id="toast-undo">Rückgängig</button></div>
+
 <!-- Firebase SDKs -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -353,9 +371,12 @@ function setupListeners(uid) {
   });
   // Items listener
   unsubItems = onSnapshot(collection(db, 'users', uid, 'items'), snap => {
-    data.items = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    const allItems = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    data.items = allItems.filter(i => !i.deleted);
+    data.trash = allItems.filter(i => i.deleted).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
     renderRooms();
     const cur = document.querySelector('.view.active')?.id;
+    if (cur === 'view-trash') renderTrash();
     if (cur === 'view-items') renderItems();
     if (cur === 'view-shopping') renderShop();
     if (cur === 'view-costs') renderCosts();
@@ -415,7 +436,7 @@ const CAT_COLORS = {
   'Bad':{bg:'#FAECE7',c:'#5a1a08'},'Sonstiges':{bg:'#f0efe8',c:'#3a3a30'}
 };
 
-let data = {rooms:[], items:[]};
+let data = {rooms:[], items:[], trash:[]};
 let currentRoomId = null;
 let currentFilter = 'all';
 let shopFilter = 'all';
@@ -442,7 +463,95 @@ function goBack() {
 }
 
 function showUserMenu() {
-  if (confirm('Abmelden?')) window.doSignOut && window.doSignOut();
+  removeModal();
+  const div = document.createElement('div');
+  div.className='modal-overlay'; div.id='modal';
+  div.onclick = e=>{ if(e.target===div) removeModal(); };
+  const n = (data.trash||[]).length;
+  div.innerHTML = `<div class="modal">
+    <div class="modal-handle"></div>
+    <button class="menu-btn" onclick="removeModal();openTrash()">🗑️ Papierkorb${n?` (${n})`:''}</button>
+    <button class="menu-btn" style="color:var(--red)" onclick="removeModal();if(confirm('Abmelden?'))window.doSignOut&&window.doSignOut()">Abmelden</button>
+    <button class="btn-cancel" style="width:100%;margin-top:8px" onclick="removeModal()">Schließen</button>
+  </div>`;
+  document.body.appendChild(div);
+}
+
+// ---------- Papierkorb ----------
+let toastTimer = null;
+function showToast(msg, undoFn) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  const btn = document.getElementById('toast-undo');
+  btn.style.display = undoFn ? '' : 'none';
+  btn.onclick = () => { hideToast(); undoFn && undoFn(); };
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 6000);
+}
+function hideToast() { document.getElementById('toast').classList.remove('show'); }
+
+function openTrash() {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-trash').classList.add('active');
+  renderTrash();
+}
+
+function renderTrash() {
+  const c = document.getElementById('trash-container');
+  const list = data.trash || [];
+  if (!list.length) {
+    c.innerHTML = '<div class="empty-state"><div class="empty-icon">🗑️</div><p>Der Papierkorb ist leer.</p></div>';
+    return;
+  }
+  c.innerHTML = list.map(item=>{
+    const price = item.price ? '€'+itemTotal(item).toFixed(2) : '';
+    const rooms = itemRoomIds(item).map(id=>data.rooms.find(r=>r.id===id)?.name).filter(Boolean).join(', ');
+    const date = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit'}) + ' ' + new Date(item.deletedAt).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'}) : '';
+    const meta = [price, rooms, item.note, date && 'gelöscht '+date].filter(Boolean).join(' · ');
+    return `<div class="item-row">
+      <div class="item-info">
+        <div class="item-name">${item.name}</div>
+        <div class="item-meta">${meta}</div>
+      </div>
+      <button class="restore-btn" onclick="restoreItem('${item.id}')">Wiederherstellen</button>
+      <button class="item-delete" onclick="purgeItem('${item.id}')" title="Endgültig löschen"><svg width="18" height="18"><use href="#ic-trash"/></svg></button>
+    </div>`;
+  }).join('');
+}
+
+function restoreItemObj(item) {
+  const {deleted, deletedAt, ...rest} = item;
+  // Räume, die es nicht mehr gibt, rausfiltern
+  let ids = itemRoomIds(rest).filter(id=>data.rooms.some(r=>r.id===id));
+  let note = null;
+  if (!ids.length && data.rooms.length) {
+    ids = [data.rooms[0].id];
+    note = `Raum existiert nicht mehr – in „${data.rooms[0].name}" wiederhergestellt`;
+  }
+  rest.roomIds = ids;
+  rest.roomId = ids[0] || '';
+  window.fbSaveItem && window.fbSaveItem(rest);
+  return note;
+}
+
+function restoreItem(id) {
+  const item = (data.trash||[]).find(i=>i.id===id);
+  if (!item) return;
+  const note = restoreItemObj(item);
+  showToast(note || `„${item.name}" wiederhergestellt`);
+}
+
+function purgeItem(id) {
+  if (!confirm('Endgültig löschen? Das kann nicht rückgängig gemacht werden.')) return;
+  window.fbDeleteItem && window.fbDeleteItem(id);
+}
+
+function emptyTrash() {
+  const list = data.trash || [];
+  if (!list.length) return;
+  if (!confirm(list.length+' Artikel endgültig löschen? Das kann nicht rückgängig gemacht werden.')) return;
+  list.forEach(i => window.fbDeleteItem && window.fbDeleteItem(i.id));
 }
 
 // Total price for an item (price * qty)
@@ -696,7 +805,11 @@ function toggleOwned(id) {
 }
 
 function deleteItem(id) {
-  window.fbDeleteItem && window.fbDeleteItem(id);
+  const item = data.items.find(i=>i.id===id);
+  if (!item) return;
+  // Soft delete: in den Papierkorb verschieben
+  window.fbSaveItem && window.fbSaveItem({...item, deleted:true, deletedAt:Date.now()});
+  showToast(`„${item.name}" gelöscht`, () => restoreItemObj(item));
 }
 
 function setFilter(f,btn) {
