@@ -94,6 +94,9 @@ document.currentScript.parentNode.appendChild(link);
   .cat-badge{font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap;flex-shrink:0;}
   .fab{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom,0px));right:20px;width:52px;height:52px;border-radius:50%;background:var(--blue);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(0,0,0,0.25);transition:transform 0.15s;z-index:20;}
   .fab:active{transform:scale(0.94);}
+  .search-bar{padding:8px 16px;flex-shrink:0;}
+  .search-input{width:100%;padding:9px 12px 9px 34px;font-size:16px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239a9a94' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.5' y2='16.5'/%3E%3C/svg%3E") no-repeat 11px center;color:var(--text);-webkit-appearance:none;appearance:none;}
+  .search-input::placeholder{color:var(--text3);}
   .menu-btn{display:block;width:100%;padding:14px;margin-bottom:8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;text-align:left;}
   .restore-btn{background:none;border:0.5px solid var(--blue);color:var(--blue);border-radius:20px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;}
   .restore-btn:active{background:var(--bg2);}
@@ -210,6 +213,7 @@ document.currentScript.parentNode.appendChild(link);
       <button class="user-btn" onclick="showUserMenu()" id="user-btn"><div class="user-avatar-placeholder" id="user-avatar">?</div></button>
     </div>
   </div>
+  <div class="search-bar"><input class="search-input" id="search-rooms" type="search" placeholder="Räume und Artikel suchen…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" oninput="onSearch('rooms',this.value)"></div>
   <div class="scroll-area">
     <div class="summary-bar">
       <div class="stat-card"><div class="stat-label">Vorhanden</div><div class="stat-value green" id="stat-owned">0</div></div>
@@ -220,7 +224,7 @@ document.currentScript.parentNode.appendChild(link);
       <div class="stat-card small"><div class="stat-label small">Bestellt</div><div class="stat-value small ordered" id="stat-ordered">€0</div></div>
       <div class="stat-card small"><div class="stat-label small">Geplant</div><div class="stat-value small" id="stat-plan">€0</div></div>
     </div>
-    <div class="section-title">Räume</div>
+    <div class="section-title" id="rooms-title">Räume</div>
     <div id="rooms-container"></div>
   </div>
   <button class="fab" onclick="openAddItem(null)"><svg width="28" height="28" style="color:#fff"><use href="#ic-plus"/></svg></button>
@@ -238,6 +242,7 @@ document.currentScript.parentNode.appendChild(link);
     <h1 id="room-title">Raum</h1>
     <button class="icon-btn" onclick="deleteCurrentRoom()" style="color:var(--red)"><svg width="18" height="18"><use href="#ic-trash"/></svg></button>
   </div>
+  <div class="search-bar"><input class="search-input" id="search-items" type="search" placeholder="In diesem Raum suchen…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" oninput="onSearch('items',this.value)"></div>
   <div class="filter-bar">
     <button class="filter-btn active" onclick="setFilter('all',this)">Alle</button>
     <button class="filter-btn" onclick="setFilter('planned',this)">Geplant</button>
@@ -254,6 +259,7 @@ document.currentScript.parentNode.appendChild(link);
     <h1>Einkaufsliste</h1>
     <button class="icon-btn" onclick="markAllShopDone()"><svg width="18" height="18"><use href="#ic-checks"/></svg> Erledigt</button>
   </div>
+  <div class="search-bar"><input class="search-input" id="search-shop" type="search" placeholder="Einkaufsliste durchsuchen…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" oninput="onSearch('shop',this.value)"></div>
   <div class="filter-bar" id="shop-filter-bar">
     <button class="filter-btn active" onclick="setShopFilter('all',this)">Alle</button>
     <button class="filter-btn" onclick="setShopFilter('planned',this)">Geplant</button>
@@ -270,6 +276,7 @@ document.currentScript.parentNode.appendChild(link);
 <!-- COSTS VIEW -->
 <div id="view-costs" class="view">
   <div class="topbar"><h1>Kostenübersicht</h1></div>
+  <div class="search-bar"><input class="search-input" id="search-costs" type="search" placeholder="Kosten durchsuchen…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" oninput="onSearch('costs',this.value)"></div>
   <div class="scroll-area">
     <div class="summary-bar-3">
       <div class="stat-card small"><div class="stat-label small">Ausgegeben</div><div class="stat-value small green" id="cost-spent">€0</div></div>
@@ -292,6 +299,7 @@ document.currentScript.parentNode.appendChild(link);
     <h1>Papierkorb</h1>
     <button class="icon-btn" onclick="emptyTrash()" style="color:var(--red)">Leeren</button>
   </div>
+  <div class="search-bar"><input class="search-input" id="search-trash" type="search" placeholder="Papierkorb durchsuchen…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" oninput="onSearch('trash',this.value)"></div>
   <div class="scroll-area" id="trash-container" style="padding-top:12px"></div>
 </div>
 
@@ -499,9 +507,9 @@ function openTrash() {
 
 function renderTrash() {
   const c = document.getElementById('trash-container');
-  const list = data.trash || [];
+  const list = (data.trash || []).filter(i=>matchItem(i,'trash'));
   if (!list.length) {
-    c.innerHTML = '<div class="empty-state"><div class="empty-icon">🗑️</div><p>Der Papierkorb ist leer.</p></div>';
+    c.innerHTML = isSearching('trash') ? noHits() : '<div class="empty-state"><div class="empty-icon">🗑️</div><p>Der Papierkorb ist leer.</p></div>';
     return;
   }
   c.innerHTML = list.map(item=>{
@@ -548,7 +556,7 @@ function purgeItem(id) {
 }
 
 function emptyTrash() {
-  const list = data.trash || [];
+  const list = (data.trash || []).filter(i=>matchItem(i,'trash'));
   if (!list.length) return;
   if (!confirm(list.length+' Artikel endgültig löschen? Das kann nicht rückgängig gemacht werden.')) return;
   list.forEach(i => window.fbDeleteItem && window.fbDeleteItem(i.id));
@@ -559,6 +567,69 @@ function itemTotal(item) {
   if (!item.price) return 0;
   const qty = item.qty ? parseFloat(item.qty) : 1;
   return parseFloat(item.price) * qty;
+}
+
+// ---------- Suche ----------
+const search = {rooms:'', items:'', shop:'', costs:'', trash:''};
+
+// Alle Suchwörter müssen vorkommen (z.B. "lampe ikea")
+function matchText(hay, q) {
+  const terms = (q||'').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return true;
+  const h = (hay||'').toLowerCase();
+  return terms.every(t => h.includes(t));
+}
+function matchItem(item, view) {
+  const q = search[view];
+  if (!q || !q.trim()) return true;
+  const rooms = itemRoomIds(item).map(id => data.rooms.find(r=>r.id===id)?.name || '').join(' ');
+  return matchText([item.name, item.note, item.category, rooms].filter(Boolean).join(' '), q);
+}
+function isSearching(view) { return !!(search[view] && search[view].trim()); }
+function noHits() { return '<div class="empty-state"><div class="empty-icon">🔍</div><p>Keine Treffer.</p></div>'; }
+function onSearch(view, val) {
+  search[view] = val;
+  ({rooms:renderRooms, items:renderItems, shop:renderShop, costs:renderCosts, trash:renderTrash})[view]();
+}
+function resetSearch(view) {
+  search[view] = '';
+  const el = document.getElementById('search-'+view);
+  if (el) el.value = '';
+}
+function priceLabel(item) {
+  if (!item.price) return '';
+  return item.qty && parseFloat(item.qty)>1
+    ? `${item.qty}× €${parseFloat(item.price).toFixed(2)} = €${itemTotal(item).toFixed(2)}`
+    : `€${parseFloat(item.price).toFixed(2)}`;
+}
+function roomCardHTML(r, idx) {
+  const items = data.items.filter(i=>itemRoomIds(i).includes(r.id));
+  const done = items.filter(i=>i.status==='owned').length;
+  const pct = items.length ? Math.round(done/items.length*100) : 0;
+  const col = ICON_COLORS[idx%ICON_COLORS.length];
+  return `<div class="room-card" onclick="openRoom('${r.id}')">
+      <div class="room-icon" style="background:${col.bg}">${r.icon||'🏠'}</div>
+      <div class="room-info">
+        <div class="room-name">${r.name}</div>
+        <div class="room-meta">${done}/${items.length} vorhanden</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <svg width="18" height="18" style="color:var(--text3);flex-shrink:0"><use href="#ic-chevron"/></svg>
+    </div>`;
+}
+function searchItemRowHTML(item) {
+  const labels = {planned:'Geplant',ordered:'Bestellt',owned:'Vorhanden'};
+  const rooms = itemRoomIds(item).map(id=>data.rooms.find(r=>r.id===id)?.name).filter(Boolean).join(', ');
+  const meta = [priceLabel(item), rooms, item.note].filter(Boolean).join(' · ');
+  const checkInner = item.status==='owned' ? `<svg width="13" height="13" style="color:#fff"><use href="#ic-check"/></svg>` : '';
+  return `<div class="item-row">
+      <div class="checkbox ${item.status==='owned'?'checked':''}" onclick="toggleOwned('${item.id}')">${checkInner}</div>
+      <div class="item-info" onclick="openEditItem('${item.id}')">
+        <div class="item-name ${item.status==='owned'?'done':''}">${item.name}</div>
+        ${meta?`<div class="item-meta">${meta}</div>`:''}
+      </div>
+      <span class="status-badge badge-${item.status}">${labels[item.status]}</span>
+    </div>`;
 }
 
 function renderRooms() {
@@ -574,31 +645,30 @@ function renderRooms() {
   document.getElementById('stat-plan').textContent = '€'+plan.toFixed(2);
 
   const c = document.getElementById('rooms-container');
+  const searching = isSearching('rooms');
+  document.getElementById('rooms-title').style.display = searching ? 'none' : '';
   if (!data.rooms.length) {
     c.innerHTML = '<div class="empty-state"><div class="empty-icon">🏠</div><p>Noch keine Räume.<br>Tippe oben auf "+ Raum".</p></div>';
     return;
   }
   const sorted = [...data.rooms].sort((a,b)=>(a.order||0)-(b.order||0));
-  c.innerHTML = sorted.map((r,idx)=>{
-    const items = data.items.filter(i=>itemRoomIds(i).includes(r.id));
-    const done = items.filter(i=>i.status==='owned').length;
-    const pct = items.length ? Math.round(done/items.length*100) : 0;
-    const col = ICON_COLORS[idx%ICON_COLORS.length];
-    return `<div class="room-card" onclick="openRoom('${r.id}')">
-      <div class="room-icon" style="background:${col.bg}">${r.icon||'🏠'}</div>
-      <div class="room-info">
-        <div class="room-name">${r.name}</div>
-        <div class="room-meta">${done}/${items.length} vorhanden</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-      </div>
-      <svg width="18" height="18" style="color:var(--text3);flex-shrink:0"><use href="#ic-chevron"/></svg>
-    </div>`;
-  }).join('');
+  if (!searching) {
+    c.innerHTML = sorted.map((r,idx)=>roomCardHTML(r, idx)).join('');
+    return;
+  }
+  const roomHits = sorted.map((r,idx)=>({r,idx})).filter(x=>matchText(x.r.name, search.rooms));
+  const itemHits = data.items.filter(i=>matchItem(i,'rooms'));
+  if (!roomHits.length && !itemHits.length) { c.innerHTML = noHits(); return; }
+  let html = '';
+  if (roomHits.length) html += '<div class="section-title">Räume</div>' + roomHits.map(x=>roomCardHTML(x.r, x.idx)).join('');
+  if (itemHits.length) html += '<div class="section-title">Artikel</div>' + itemHits.map(searchItemRowHTML).join('');
+  c.innerHTML = html;
 }
 
 function openRoom(id) {
   currentRoomId = id;
   document.getElementById('room-title').textContent = data.rooms.find(r=>r.id===id)?.name||'';
+  resetSearch('items');
   currentFilter = 'all';
   document.querySelectorAll('#view-items .filter-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -634,10 +704,10 @@ function itemRoomIds(item) {
 
 function renderItems() {
   const all = data.items.filter(i=>itemRoomIds(i).includes(currentRoomId));
-  const filtered = currentFilter==='all' ? all : all.filter(i=>i.status===currentFilter);
+  const filtered = (currentFilter==='all' ? all : all.filter(i=>i.status===currentFilter)).filter(i=>matchItem(i,'items'));
   const c = document.getElementById('items-container');
   if (!filtered.length) {
-    c.innerHTML = '<div class="empty-state"><div class="empty-icon">🪑</div><p>'+(all.length?'Keine Einträge in dieser Kategorie.':'Noch nichts hier.<br>Tippe auf + zum Hinzufügen.')+'</p></div>';
+    c.innerHTML = isSearching('items') ? noHits() : '<div class="empty-state"><div class="empty-icon">🪑</div><p>'+(all.length?'Keine Einträge in dieser Kategorie.':'Noch nichts hier.<br>Tippe auf + zum Hinzufügen.')+'</p></div>';
     return;
   }
   const labels = {planned:'Geplant',ordered:'Bestellt',owned:'Vorhanden'};
@@ -689,10 +759,10 @@ function renderShop() {
   if (shopFilter==='all') filtered = candidates;
   else if (shopFilter==='planned' || shopFilter==='ordered') filtered = candidates.filter(i=>i.status===shopFilter);
   else filtered = candidates.filter(i=>i.note===shopFilter);
-  const sorted = [...filtered].sort((a,b)=>(a._shopDone?1:-1)-(b._shopDone?1:-1));
+  const sorted = filtered.filter(i=>matchItem(i,'shop')).sort((a,b)=>(a._shopDone?1:-1)-(b._shopDone?1:-1));
   const c = document.getElementById('shop-container');
   if (!sorted.length) {
-    c.innerHTML = '<div class="empty-state"><div class="empty-icon">🛒</div><p>Einkaufsliste ist leer –<br>alles vorhanden!</p></div>';
+    c.innerHTML = isSearching('shop') ? noHits() : '<div class="empty-state"><div class="empty-icon">🛒</div><p>Einkaufsliste ist leer –<br>alles vorhanden!</p></div>';
     return;
   }
   const groups = {};
@@ -745,7 +815,8 @@ function setShopFilter(f,btn) {
 }
 
 function renderCosts() {
-  const allP = data.items.filter(i=>i.price);
+  const src = data.items.filter(i=>matchItem(i,'costs'));
+  const allP = src.filter(i=>i.price);
   const spent   = allP.filter(i=>i.status==='owned').reduce((s,i)=>s+itemTotal(i),0);
   const ordered = allP.filter(i=>i.status==='ordered').reduce((s,i)=>s+itemTotal(i),0);
   const open    = allP.filter(i=>i.status==='planned').reduce((s,i)=>s+itemTotal(i),0);
@@ -754,13 +825,13 @@ function renderCosts() {
   document.getElementById('cost-open').textContent    = '€'+open.toFixed(2);
   const c = document.getElementById('cost-container');
   if (!allP.length) {
-    c.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>Noch keine Preise erfasst.</p></div>';
+    c.innerHTML = isSearching('costs') ? noHits() : '<div class="empty-state"><div class="empty-icon">📊</div><p>Noch keine Preise erfasst.</p></div>';
     return;
   }
   let byRoom='';
   const sortedRooms = [...data.rooms].sort((a,b)=>(a.order||0)-(b.order||0));
   sortedRooms.forEach((r,idx)=>{
-    const items = data.items.filter(i=>itemRoomIds(i).includes(r.id)&&i.price);
+    const items = src.filter(i=>itemRoomIds(i).includes(r.id)&&i.price);
     if (!items.length) return;
     const total = items.reduce((s,i)=>s+itemTotal(i),0);
     const col = ICON_COLORS[idx%ICON_COLORS.length];
@@ -779,7 +850,7 @@ function renderCosts() {
   });
   let byCat='';
   CATEGORIES.forEach(cat=>{
-    const items = data.items.filter(i=>i.category===cat&&i.price);
+    const items = src.filter(i=>i.category===cat&&i.price);
     if (!items.length) return;
     const total = items.reduce((s,i)=>s+itemTotal(i),0);
     const cc = CAT_COLORS[cat];
